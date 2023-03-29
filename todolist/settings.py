@@ -81,10 +81,10 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
         "HOST": os.environ.get("DB_HOST", "localhost"),
-        "NAME": os.environ.get("POSTGRES_NAME", "skymarket"),
+        "NAME": os.environ.get("POSTGRES_NAME", "postgres"),
         "PORT": os.environ.get("DB_PORT", "5432"),
-        "USER": os.environ.get("DB_USER", "skymarket"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", "skymarket"),
+        "USER": os.environ.get("DB_USER", "postgres"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
     },
 }
 
