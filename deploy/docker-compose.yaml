@@ -15,7 +15,7 @@ services:
       interval: 3s
 
   api:
-    image: painassassin/dipoma_12:latest
+    image: tempyura/dipoma_12:latest
     build: .
     env_file: .env
     depends_on:
