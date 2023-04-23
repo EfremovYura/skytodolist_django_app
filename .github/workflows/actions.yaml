@@ -29,7 +29,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           source: "deploy/*"
-          target: "diploma_12"
+          target: "./"
           strip_components: 1
       - name: Run compose
         uses: appleboy/ssh-action@master
@@ -38,7 +38,6 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            cd diploma_12
             docker-compose pull
             docker-compose up -d
       - name: Cleanup
