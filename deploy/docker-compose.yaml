@@ -7,9 +7,7 @@ services:
       POSTGRES_DB: ${DB_NAME}
     restart: always
     volumes:
-      - pg_data:/var/lib/postgresql/data/
-    ports:
-    - "5432:5432"
+      - pg_dipoma_12_data:/var/lib/postgresql/data/
     healthcheck:
       test: pg_isready -U ${DB_USER} -d ${DB_NAME}
       timeout: 3s
@@ -17,18 +15,13 @@ services:
       interval: 3s
 
   api:
+    image: tempyura/dipoma_12:latest
     build: .
     env_file: .env
-    environment:
-      DB_HOST: db
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "8000:8000"
     volumes:
-      - ./core:/code/core
-      - ./todolist:/opt/todolist
       - django_static:/opt/static
 
   frontend:
@@ -39,10 +32,10 @@ services:
       api:
         condition: service_started
     volumes:
-      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - django_static:/usr/share/nginx/html/static
 
 
 volumes:
-  pg_data:
+  pg_dipoma_12_data:
   django_static:
