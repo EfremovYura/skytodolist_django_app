@@ -27,7 +27,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./core:/code/core
+      - ./core:/opt/core
       - ./todolist:/opt/todolist
       - django_static:/opt/static
 
