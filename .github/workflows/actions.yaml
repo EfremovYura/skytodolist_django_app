@@ -29,7 +29,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           source: "deploy/*"
-          target: "."
+          target: "./"
       - name: Run compose
         uses: appleboy/ssh-action@master
         with:
