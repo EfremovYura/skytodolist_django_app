@@ -70,4 +70,3 @@ class UpdatePasswordView(GenericAPIView):
         user.save(update_fields=['password'])
 
         return Response(serializer.data)
-

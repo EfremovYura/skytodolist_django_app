@@ -5,8 +5,9 @@ from rest_framework import permissions, filters
 from rest_framework.pagination import LimitOffsetPagination
 
 from goals.filters import GoalDateFilter
-from goals.models import GoalCategory, Goal
-from goals.serializers import GoalCategoryCreateSerializer, GoalCategorySerializer, GoalCreateSerializer, GoalSerializer
+from goals.models import GoalCategory, Goal, GoalComment
+from goals.serializers import GoalCategoryCreateSerializer, GoalCategorySerializer, GoalCreateSerializer, \
+    GoalSerializer, GoalCommentSerializer, GoalCommentCreateSerializer
 
 
 class GoalCategoryCreateView(CreateAPIView):
@@ -77,3 +78,40 @@ class GoalView(RetrieveUpdateDestroyAPIView):
     def perform_destroy(self, instance):
         instance.status = Goal.Status.archived
         instance.save(update_fields=('status',))
+
+
+class GoalCommentCreateView(CreateAPIView):
+    serializer_class = GoalCommentCreateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class GoalCommentListView(ListAPIView):
+    serializer_class = GoalCommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['goal']
+    ordering_fields = ['created', 'updated']
+    ordering = ['-created']
+
+    def get_queryset(self):
+        return (
+            GoalComment.objects.select_related('user')
+            .filter(user=self.request.user)
+            .exclude(goal__status=Goal.Status.archived)
+        )
+
+
+class GoalCommentView(RetrieveUpdateDestroyAPIView):
+    serializer_class = GoalCommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['goal']
+    ordering_fields = ['created', 'updated']
+    ordering = ['-created']
+
+    def get_queryset(self):
+        return (
+            GoalComment.objects.select_related('user')
+            .filter(user=self.request.user)
+            .exclude(goal__status=Goal.Status.archived)
+        )
