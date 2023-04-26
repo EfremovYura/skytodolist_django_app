@@ -8,7 +8,9 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-ENTRYPOINT ["bash", "entrypoint.sh"]
+CMD ["python", "manage.py", "migrate"]
+
+CMD ["python", "manage.py", "collectstatic", "-c", "--no-input"]
 
 EXPOSE 8000
 
