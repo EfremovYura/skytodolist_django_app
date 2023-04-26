@@ -9,7 +9,7 @@ services:
       POSTGRES_DB: ${DB_NAME}
     restart: always
     volumes:
-      - pg_dipoma_12_data:/var/lib/postgresql/data/
+      - pg_diploma_12_data:/var/lib/postgresql/data/
     healthcheck:
       test: pg_isready -U ${DB_USER} -d ${DB_NAME}
       timeout: 3s
@@ -17,7 +17,7 @@ services:
       interval: 3s
 
   api:
-    image: tempyura/dipoma_12:latest
+    image: tempyura/diploma_12:latest
     build:
       context: "."
       dockerfile: "./Dockerfile.prod"
@@ -41,5 +41,5 @@ services:
 
 
 volumes:
-  pg_dipoma_12_data:
+  pg_diploma_12_data:
   django_static:
