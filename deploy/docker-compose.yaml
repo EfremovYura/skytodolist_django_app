@@ -27,8 +27,18 @@ services:
     volumes:
       - django_static:/opt/static
 
+  bot:
+    image: tempyura/diploma_12:latest
+    env_file: .env
+    environment:
+      DB_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python manage.py runbot
+
   frontend:
-    image: sermalenk/skypro-front:lesson-37
+    image: sermalenk/skypro-front:lesson-38
     ports:
       - "80:80"
     depends_on:
