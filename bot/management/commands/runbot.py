@@ -14,6 +14,9 @@ class Command(BaseCommand):
         self.tg_client = TgClient(settings.BOT_TOKEN)
 
     def handle_authorized_user(self, msg, tg_user):
+        if not msg.text:
+            return
+
         if msg.text == "/goals":
             self.fetch_tasks(msg, tg_user)
         else:
