@@ -16,16 +16,16 @@ class TgClient:
         data = self._get(method='getUpdates', offset=offset, timeout=timeout)
         try:
             return GetUpdatesResponse(**data)
-        except ValidationError as e:
+        except ValidationError:
             return GetUpdatesResponse(ok=False, result=[])
-
 
     def send_message(self, chat_id, text):
         data = self._get(method='sendMessage', chat_id=chat_id, text=text)
         return SendMessageResponse(**data)
 
-
     def _get(self, method, **params):
         url = self.get_url(method)
         response = requests.get(url, params=params)
+        if not response.ok:
+            raise ValueError
         return response.json()
