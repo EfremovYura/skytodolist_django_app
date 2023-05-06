@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from bot.models import TgUser
 from bot.serializers import TgUserSerializer
 from bot.tg.client import TgClient
-
+from  django.conf import settings
 
 class VerificationCodeView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -23,6 +23,6 @@ class VerificationCodeView(generics.GenericAPIView):
         tg_user.user = request.user
         tg_user.save()
 
-        TgClient().send_message(chat_id=tg_user.chat_id, text='Bot verified.')
+        TgClient(settings.BOT_TOKEN).send_message(chat_id=tg_user.chat_id, text='Bot verified.')
 
         return Response(TgUserSerializer(tg_user).data)

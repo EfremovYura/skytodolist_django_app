@@ -6,7 +6,7 @@ from bot.tg.schemas import GetUpdatesResponse, SendMessageResponse
 
 
 class TgClient:
-    def __init__(self, token=settings.BOT_TOKEN):
+    def __init__(self, token):
         self.token = token
 
     def get_url(self, method: str):
