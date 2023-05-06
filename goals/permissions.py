@@ -1,9 +1,11 @@
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
-from goals.models import BoardParticipant
+from rest_framework.request import Request
+from rest_framework.generics import GenericAPIView
+from goals.models import BoardParticipant, Board
 
 
 class BoardPermissions(IsAuthenticated):
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: GenericAPIView, obj: Board) -> bool:
         _filters = {'user_id': request.user.id, 'board_id': obj.id}
         if request.method not in SAFE_METHODS:
             _filters['role'] = BoardParticipant.Role.owner

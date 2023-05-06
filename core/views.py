@@ -1,9 +1,13 @@
+from typing import Any
+
 from django.contrib.auth import authenticate, login, logout
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.serializers import Serializer
 
 from core.models import User
 from core.serializers import CreateUserSerializer, ProfileSerializer, LoginSerializer, UpdatePasswordSerializer
@@ -12,11 +16,11 @@ from core.serializers import CreateUserSerializer, ProfileSerializer, LoginSeria
 class SignUpView(GenericAPIView):
     serializer_class = CreateUserSerializer
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        serializer: Serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = User.objects.create_user(**serializer.data)
+        user: User = User.objects.create_user(**serializer.data)
 
         return Response(ProfileSerializer(user).data, status=status.HTTP_201_CREATED)
 
@@ -24,11 +28,11 @@ class SignUpView(GenericAPIView):
 class LoginView(GenericAPIView):
     serializer_class = LoginSerializer
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        serializer: Serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = authenticate(
+        user: User = authenticate(
             username=serializer.validated_data['username'],
             password=serializer.validated_data['password']
         )
@@ -45,10 +49,10 @@ class ProfileView(RetrieveUpdateDestroyAPIView):
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_object(self):
+    def get_object(self) -> User:
         return self.request.user
 
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         logout(request)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -57,11 +61,11 @@ class UpdatePasswordView(GenericAPIView):
     serializer_class = UpdatePasswordSerializer
     permission_classes = [IsAuthenticated]
 
-    def put(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+    def put(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        serializer: Serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = request.user
+        user: User = request.user
 
         if not user.check_password(serializer.validated_data['old_password']):
             raise AuthenticationFailed('Current password is incorrect')

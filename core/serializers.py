@@ -13,7 +13,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 'email', 'password', 'password_repeat')
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         if attrs['password'] != attrs['password_repeat']:
             raise ValidationError('Passwords must match')
         return attrs
