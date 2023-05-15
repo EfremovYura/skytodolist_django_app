@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.request import Request
 
 from core.models import User
 from core.serializers import ProfileSerializer
@@ -18,7 +19,7 @@ class BoardParticipantSerializer(serializers.ModelSerializer):
     role = serializers.ChoiceField(required=True, choices=BoardParticipant.editable_roles)
     user = serializers.SlugRelatedField(slug_field="username", queryset=User.objects.all())
 
-    def validate_user(self, user):
+    def validate_user(self, user: User) -> User:
         if self.context['request'].user == user:
             raise ValidationError('Failed to change your role')
         return user
@@ -32,11 +33,11 @@ class BoardParticipantSerializer(serializers.ModelSerializer):
 class BoardWithParticipantsSerializer(BoardSerializer):
     participants = BoardParticipantSerializer(many=True)
 
-    def update(self, instance, validated_data):
-        request = self.context['request']
+    def update(self, instance: Board, validated_data: dict) -> Board:
+        request: Request = self.context['request']
         with transaction.atomic():
             BoardParticipant.objects.filter(board=instance).exclude(user=request.user).delete()
-            new_participants = []
+            new_participants: list = []
             for participant in validated_data.get('participants', []):
                 new_participants.append(
                     BoardParticipant(user=participant['user'], role=participant['role'], board=instance)
@@ -59,7 +60,7 @@ class GoalCategoryCreateSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created", "updated", "user", "is_deleted")
         fields = "__all__"
 
-    def validate_category(self, value):
+    def validate_category(self, value: GoalCategory) -> GoalCategory:
         if value.is_deleted:
             raise serializers.ValidationError("not allowed in deleted category")
 
@@ -77,7 +78,7 @@ class GoalCategorySerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ("id", "created", "updated", "user", "is_deleted")
 
-    def validate_board(self, board):
+    def validate_board(self, board: Board) -> Board:
         if board.is_deleted:
             raise ValidationError("Board is deleted")
 
@@ -92,18 +93,18 @@ class GoalCategorySerializer(serializers.ModelSerializer):
 
 
 class GoalCategoryWithUserSerializer(GoalCategorySerializer):
-    user = ProfileSerializer(read_only=True)
+    user: User = ProfileSerializer(read_only=True)
 
 
 class GoalCreateSerializer(serializers.ModelSerializer):
-    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    user: User = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Goal
         fields = "__all__"
         read_only_fields = ("id", "created", "updated", "user")
 
-    def validate_category(self, value):
+    def validate_category(self, value: GoalCategory) -> GoalCategory:
         if value.is_deleted:
             raise ValidationError('Category not found')
         if self.context['request'].user.id != value.user_id:
@@ -112,14 +113,14 @@ class GoalCreateSerializer(serializers.ModelSerializer):
 
 
 class GoalSerializer(serializers.ModelSerializer):
-    user = ProfileSerializer(read_only=True)
+    user: User = ProfileSerializer(read_only=True)
 
     class Meta:
         model = Goal
         fields = "__all__"
         read_only_fields = ("id", "created", "updated", "user")
 
-    def validate_category(self, value):
+    def validate_category(self, value: GoalCategory) -> GoalCategory:
         if value.is_deleted:
             raise ValidationError('Category not found')
         if self.context['request'].user.id != value.user_id:
@@ -128,11 +129,11 @@ class GoalSerializer(serializers.ModelSerializer):
 
 
 class GoalWithUserSerializer(GoalSerializer):
-    user = ProfileSerializer(read_only=True)
+    user: User = ProfileSerializer(read_only=True)
 
 
 class GoalCommentCreateSerializer(serializers.ModelSerializer):
-    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    user: User = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = GoalComment
@@ -149,10 +150,10 @@ class GoalCommentCreateSerializer(serializers.ModelSerializer):
 
 
 class GoalCommentSerializer(GoalCommentCreateSerializer):
-    user = ProfileSerializer(read_only=True)
-    goal = serializers.PrimaryKeyRelatedField(read_only=True)
+    user: User = ProfileSerializer(read_only=True)
+    goal: Goal = serializers.PrimaryKeyRelatedField(read_only=True)
 
 
 class GoalCommentWithUserSerializer(GoalCommentSerializer):
-    user = ProfileSerializer(read_only=True)
-    goal = serializers.PrimaryKeyRelatedField(read_only=True)
+    user: User = ProfileSerializer(read_only=True)
+    goal: Goal = serializers.PrimaryKeyRelatedField(read_only=True)

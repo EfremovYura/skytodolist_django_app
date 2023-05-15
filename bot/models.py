@@ -9,5 +9,5 @@ class TgUser(models.Model):
     verification_code = models.CharField(max_length=100, null=True, blank=True, default=None)
 
     @staticmethod
-    def generate_verification_code():
+    def generate_verification_code() -> str:
         return str(uuid4())
