@@ -3,7 +3,7 @@ from typing import Any
 from django.conf import settings
 from django.core.management import BaseCommand
 
-from bot.tg.schemas import GetUpdatesResponse, Message
+from bot.tg.schemas import GetUpdatesResponse, Message, EditedMessage
 from bot.models import TgUser
 from bot.tg.client import TgClient
 from goals.models import Goal, GoalCategory, BoardParticipant, Board
@@ -21,9 +21,9 @@ class Command(BaseCommand):
             res: GetUpdatesResponse = self.tg_client.get_updates(offset=offset)
             for item in res.result:
                 offset = item.update_id + 1
-                self.handle_message(item.message)
+                self.handle_message(item.message or item.edited_message)
 
-    def handle_message(self, msg: Message) -> None:
+    def handle_message(self, msg: Message | EditedMessage) -> None:
         tg_user, created = TgUser.objects.get_or_create(chat_id=msg.chat.id)
 
         if created:
@@ -34,12 +34,12 @@ class Command(BaseCommand):
         else:
             self.handle_unauthorized_user(msg, tg_user)
 
-    def handle_unauthorized_user(self, msg: Message, tg_user: TgUser) -> None:
+    def handle_unauthorized_user(self, msg: Message | EditedMessage, tg_user: TgUser) -> None:
         tg_user.verification_code = tg_user.generate_verification_code()
         tg_user.save(update_fields=['verification_code'])
         self.tg_client.send_message(chat_id=msg.chat.id, text=f"[verification code] {tg_user.verification_code}")
 
-    def handle_authorized_user(self, msg: Message, tg_user: TgUser) -> None:
+    def handle_authorized_user(self, msg: Message | EditedMessage, tg_user: TgUser) -> None:
         if msg.text.startswith('/'):
             self.handle_command(tg_user, msg.text)
         else:
@@ -48,6 +48,8 @@ class Command(BaseCommand):
 
     def handle_command(self, tg_user: TgUser, msg_text: str) -> None:
 
+        self.tg_client.send_message(chat_id=tg_user.chat_id, text="Запрос: "+msg_text)
+
         command, *params = msg_text.split()
         user_commands: dict = {
             "/goals": self._list_user_goals,
@@ -55,9 +57,6 @@ class Command(BaseCommand):
             "/cats": self._list_user_categories,
             "/boards": self._list_user_boards,
             "/goal": self._detail_user_goal,
-            "/category": self._detail_user_category,
-            "/cat": self._detail_user_category,
-            "/board": self._detail_user_board,
             "/create": self._create_object
         }
 
@@ -66,7 +65,8 @@ class Command(BaseCommand):
             command = "/help"
 
         if command == "/help":
-            self.tg_client.send_message(chat_id=tg_user.chat_id, text=f"{list(user_commands.keys())}")
+            self.tg_client.send_message(chat_id=tg_user.chat_id, text=f"Available commands: \n"
+                                                                      f"{list(user_commands.keys())}")
         else:
             user_commands[command](tg_user, *params)
 
@@ -121,12 +121,11 @@ class Command(BaseCommand):
 
         try:
             goal_id: int = int(args[0])
-        except TypeError:
+            goal: Goal = Goal.objects.select_related('user').filter(category__is_deleted=False) \
+                .exclude(status=Goal.Status.archived).get(id=goal_id)
+        except Exception:
             self.tg_client.send_message(chat_id=tg_user.chat_id, text=resp_msg)
             return None
-
-        goal: Goal = Goal.objects.select_related('user').filter(category__is_deleted=False) \
-            .exclude(status=Goal.Status.archived).get(id=goal_id)
 
         resp_msg: str = f"id: {goal.id}\n" \
                         f"заголовок: {goal.title}\n" \
@@ -136,48 +135,6 @@ class Command(BaseCommand):
                         f"создана: {goal.created}\n" \
                         f"дедлайн: {goal.due_date}\n"
 
-        self.tg_client.send_message(chat_id=tg_user.chat_id, text=resp_msg)
-
-    def _detail_user_board(self, tg_user: TgUser, *args: Any) -> None:
-        resp_msg: str = "[not correct command]\n" \
-                        "use: /board board_id\n" \
-                        "where board_id is id number of the board from /boards"
-
-        if not args:
-            self.tg_client.send_message(chat_id=tg_user.chat_id, text=resp_msg)
-            return None
-
-        try:
-            board_id: int = int(args[0])
-        except TypeError:
-            self.tg_client.send_message(chat_id=tg_user.chat_id, text=resp_msg)
-            return None
-
-        board: Board = Board.objects.filter(participants__user_id=tg_user.user_id).exclude(is_deleted=True). \
-            get(id=board_id)
-
-        resp_msg = str(board)
-        self.tg_client.send_message(chat_id=tg_user.chat_id, text=resp_msg)
-
-    def _detail_user_category(self, tg_user: TgUser, *args: Any) -> None:
-        resp_msg: str = "[not correct command]\n" \
-                        "use: /cat cat_id\n" \
-                        "where cat_id is id number of the cat from /cats"
-
-        if not args:
-            self.tg_client.send_message(chat_id=tg_user.chat_id, text=resp_msg)
-            return None
-
-        try:
-            cat_id: int = int(args[0])
-        except TypeError:
-            self.tg_client.send_message(chat_id=tg_user.chat_id, text=resp_msg)
-            return None
-
-        cat: GoalCategory = GoalCategory.objects.select_related('user').filter(user=tg_user, is_deleted=False). \
-            get(id=cat_id)
-
-        resp_msg = str(cat)
         self.tg_client.send_message(chat_id=tg_user.chat_id, text=resp_msg)
 
     def _create_object(self, tg_user: TgUser, *args: Any) -> None:
@@ -222,11 +179,8 @@ class Command(BaseCommand):
             Goal.objects.create(title=title, user=tg_user.user, category=category)
             tg_user.save()
 
-        except ValueError:
+        except Exception:
             self.tg_client.send_message(chat_id=tg_user.chat_id, text=resp_msg)
-            return None
-        except Exception as e:
-            self.tg_client.send_message(chat_id=tg_user.chat_id, text=str(e))
             return None
 
         resp_msg: str = "Goal created"
