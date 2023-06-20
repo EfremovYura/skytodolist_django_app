@@ -1,6 +1,14 @@
 **
 
-!core
 !todolist
+!bot
+!core
+!goals
+!deploy
+!.github
+!.gitignore
+!README.md
 !manage.py
 !entrypoint.sh
+!_entrypoint.sh
+!requirements.txt
